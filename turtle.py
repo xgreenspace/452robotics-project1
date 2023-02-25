@@ -92,20 +92,20 @@ def main(args=None):
     
     
     # turn pen on and off set_pen(r, g, b, width, off)
-    # pen = node.create_client(SetPen, 'turtle1/set_pen')
+    pen = node.create_client(SetPen, 'turtle1/set_pen')
 
 
-    # def set_pen_toggle(toggle):
-    #     msg = SetPen.Request()
-    #     msg.r = 255
-    #     msg.g = 255
-    #     msg.b = 255
-    #     msg.width = 1
-    #     msg.off = not toggle
-    #     pen.call_async(msg)
+    def set_pen_toggle(toggle):
+        msg = SetPen.Request()
+        msg.r = 255
+        msg.g = 255
+        msg.b = 255
+        msg.width = 1
+        msg.off = not toggle
+        pen.call_async(msg)
 
 
-    # set_pen_toggle(True)
+    set_pen_toggle(True)
     #set_pen_toggle(False)
 
 

@@ -16,57 +16,6 @@ from rcl_interfaces.msg import Parameter, ParameterType, ParameterValue
 import os
 import sys
 
-
-# class TurtleCircle(Node):
-
-# 	def __init__(self):
-# 		super().__init__('turtle_node')
-# 		self.publisher_ = self.create_publisher(Twist, '/turtle1/cmd_vel', 10)
-# 		self.my_subscriber = self.create_subscription(
-# 			Color, 
-# 			"/turtle1/color_sensor", 
-# 			self.color_callback_sub, 
-# 			10
-# 		)
-# 		self.my_subscriber
-# 		timer_period = 0.5 # seconds
-# 		self.timer = self.create_timer(timer_period, self.circular_callback_pub)
-# 		self.i = 0
-		
-# 	def circular_callback_pub(self):
-# 		"""
-# 		Method called by node timer very timer_period.
-# 		Creates turtle's circular motion.
-# 		"""
-# 		vel = Twist()
-# 		line_vel = 3.0
-# 		ang_vel = 2.5
-
-# 		# Defines angular and linear velocity
-# 		vel.linear.x, vel.linear.y, vel.linear.z = line_vel, 0.0, 0.0
-# 		vel.angular.x, vel.angular.y, vel.angular.z = 0.0, 0.0, ang_vel
-	
-# 		self.publisher_.publish(vel)
-# 		self.get_logger().info(f"Publishing velocity: \n\t linear.x: {vel.linear.x}; \n\t linear.z: {vel.angular.z}")
-			
-# 	def color_callback_sub(self, msg):
-# 		"""
-# 		Method logs the color returning from the topic.
-# 		"""
-# 		self.get_logger().info(f'Turtle sees Color c: {msg}')
-# 		sleep(1)
-
-		
-# def main(args=None):
-# 	rclpy.init(args=args)
-# 	turtle1 = TurtleCircle()
-# 	rclpy.spin(turtle1)
-# 	turtle1.destroy_node()
-# 	rclpy.shutdown()
-	
-# if __name__ == '__main__':
-# 	main()
-
 """ Math to get distance to and angle between two points """
 
 
@@ -79,7 +28,26 @@ def angle(vector):
     return math.atan2(vector[1], vector[0])
 
 
+# normalizes coordinates to fit between (1,1) and (10,10)
+def rescale(x, y):
+    x_range = 30
+    y_range = 25
 
+    x_out = 1 + (x / x_range) * 9
+    y_out = 1 + (y / y_range) * (25/3 - 1)
+
+    return x_out, y_out
+
+def read_points(open_file):
+    points = []
+    with open(open_file, 'r') as file:
+        for line in file:
+            if(line[0] == "("):
+                x, y = line.strip()[1:-1].split(',')
+                points.append((float(x), float(y)))
+            else: # lets just go with amari
+                points.append(line.strip())
+    return points
 
 class TAMUBot(Node):
 
@@ -95,6 +63,29 @@ class TAMUBot(Node):
 
         self.pose = Pose()
         self.flag = False
+
+        self.points = read_points("points.txt")
+        self.steps = 0 # Current point
+        
+        self.goal_pose= Pose()
+        goal = rescale(*self.points[0])
+        
+        self.goal_pose.x, self.goal_pose.y = goal # first point on letter
+        self.goal_pose.theta = self.steering_angle(self.goal_pose) # angle to letter
+
+        self.pen = self.create_client(SetPen, 'turtle1/set_pen')
+
+        self.set_pen(False)
+
+    def set_pen(self, state):
+        msg = SetPen.Request()
+        msg.r = 255
+        msg.g = 255
+        msg.b = 255
+        msg.width = 1
+        msg.off = not state
+        self.pen.call_async(msg)
+    
 
     def callback(self, data):
         self.pose.x = data.x
@@ -121,13 +112,11 @@ class TAMUBot(Node):
 
 
     def move2goal(self):
-        goal_pose= Pose()
-        goal_pose.x = float(sys.argv[1])
-        goal_pose.y = float(sys.argv[2])
-        goal_pose.theta = float(sys.argv[3])
 
         distance_tolerance = 0.1
         angular_tolerance = 0.01
+
+        goal_pose = self.goal_pose
 
         vel_msg = Twist()
 
@@ -143,11 +132,42 @@ class TAMUBot(Node):
                 self.flag = True
         
         if self.flag:
-            vel_msg.angular.z = goal_pose.theta - self.pose.theta
-            if abs(goal_pose.theta - self.pose.theta) <= angular_tolerance:
-                quit()
+             # put that in here
+            self.steps += 1
+            
+            if self.steps >= len(self.points):
+                self.steps = len(self.points) - 1
+            
+            goal = self.points[self.steps]
+            
+            if goal == "STOP DRAWING":
+                #turn off pen
+                self.set_pen(False)
+                self.steps += 1
+                goal = self.points[self.steps]
+                
+            if goal == "START DRAWING": # this string is 13 characters long
+                #turn on pen
+                self.set_pen(True)
+                self.steps += 1
+                goal = self.points[self.steps]
+            
+            goal = rescale(*goal)  # a string is being passed into it
+
+
+            self.goal_pose= Pose()
+            self.goal_pose.x, self.goal_pose.y = goal # next point
+            self.goal_pose.theta = self.steering_angle(self.goal_pose)  # should be angle from current point to next point
+            self.flag = False
+           
+            
+        
+        # if we finished drawing, call quit()
+
+    
 
         self.publisher_cmdvel.publish(vel_msg)
+        
 
 
 
