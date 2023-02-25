@@ -28,7 +28,7 @@ def angle(vector):
     return math.atan2(vector[1], vector[0])
 
 
-# normalizes coordinates to fit between (1,1) and (10,10)
+# normalizes coordinates to fit between (1,1) and (10,25/3)
 def rescale(x, y):
     x_range = 30
     y_range = 25
@@ -51,8 +51,22 @@ def read_points(open_file):
 
 class TAMUBot(Node):
 
+
+    
+
+
     def __init__(self):
         super().__init__('tamuturtle')
+        
+        self.req = SetParameters.Request()
+        self.req.parameters = [
+            Parameter(name='background_r', value=ParameterValue(integer_value=80, type=ParameterType.PARAMETER_INTEGER)),
+            Parameter(name='background_g', value=ParameterValue(integer_value=0, type=ParameterType.PARAMETER_INTEGER)),
+            Parameter(name='background_b', value=ParameterValue(integer_value=0, type=ParameterType.PARAMETER_INTEGER))
+        ]
+# im testing now
+        self.SetBackground = self.create_client(SetParameters, 'turtlesim/set_parameters')
+        self.SetBackground.call_async(self.req)
         
         self.publisher_cmdvel = self.create_publisher(Twist, '/turtle1/cmd_vel', 10)
 
@@ -137,6 +151,7 @@ class TAMUBot(Node):
             
             if self.steps >= len(self.points):
                 self.steps = len(self.points) - 1
+                quit()
             
             goal = self.points[self.steps]
             
@@ -161,9 +176,7 @@ class TAMUBot(Node):
             self.flag = False
            
             
-        
-        # if we finished drawing, call quit()
-
+    
     
 
         self.publisher_cmdvel.publish(vel_msg)
