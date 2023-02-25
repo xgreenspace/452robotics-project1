@@ -16,46 +16,46 @@ from rcl_interfaces.msg import Parameter, ParameterType, ParameterValue
 
 import os
 
+""" Math to get distance to and angle between two points """
+
+# vector from source to dest
+def trans(source, dest):
+    return (dest[0] - source[0], dest[1] - source[1])
+
+# angle of vector
+def angle(vector):
+    return math.atan2(vector[1], vector[0])
 
 
-# class ATMBot(Node):
-#     def __init__(self):
-#         super().__init__('cg_turtle')
+# returns distance between points, and angle to the horizontal of the source
+def pcoord(source, dest):
+    vector = trans(source, dest)
+    a = angle(vector)
+    return math.hypot(*vector), a
 
-#     def setParam(self, red, green, blue):
-#         client = self.create_client(
-#             SetParameters,
-#             '/turtlesim/turtlesim/set_parameters'#.format_map(locals())
-#         )
+# returns a Twist msg to turn from curr to next 
+def turn(curr, next):
+    turn_dist = (next - curr)
 
-#         req_for_set = SetParameters.Request()
+    msg = Twist()
+    msg.linear.x = 0.0
+    msg.angular.z = turn_dist #should run for 1 sec
+    publisher.publish(msg)
 
-#         # setting for red
-#         param = Parameter()                                 # prepare instance to access values
-#         param.name = "background_r"                         # name
-#         param.value.type = ParameterType.PARAMETER_INTEGER  # type
-#         param.value.integer_value = red                     # value
-#         req_for_set.parameters.append(param)                # add this to request_list to request
+# returns a Twist msg to drive from curr to next. Assumes the angles align
+def drive(dist):
 
-#         # setting for green
-#         param = Parameter()                                 # prepare instance to access values
-#         param.name = "background_g"                         # name
-#         param.value.type = ParameterType.PARAMETER_INTEGER  # type
-#         param.value.integer_value = green                   # value
-#         req_for_set.parameters.append(param)                # add this to request_list to request
+    msg = Twist()
+    msg.linear.x = dist #should run for 1 sec
+    msg.angular.z = 0.0
+    publisher.publish(msg)
 
-#         # setting for blue
-#         param = Parameter()                                 # prepare instance to access values
-#         param.name = "background_b"                         # name
-#         param.value.type = ParameterType.PARAMETER_INTEGER  # type
-#         param.value.integer_value = blue                    # value
-#         req_for_set.parameters.append(param)                # add this to request_list to request
+# turtle drives from p1 to p2
+def GoTo(p1, p2):
+    dist, angle = pcoord(curr, next)
+    turn(curr, angle)
+    drive(dist)
 
-#         client.call_async(req_for_set)             # call service with request Asynchronously
-
-
-# setdefup():
-#     pass 
 
 
 def main(args=None):
@@ -67,17 +67,18 @@ def main(args=None):
     #node.setParam(0, 0, 0)   # set red, green, blue
 
 
-    publisher = node.create_publisher(Twist, '/turtle1/cmd_vel', 10)
-    #def timer_callback():
+    publisher = node.create_publisher(Twist, '/turtle1/cmd_vel', 100)
+    # def timer_callback():
     msg = Twist()
     msg.linear.x = 0.0
-    msg.angular.z = math.radians(180)
+    msg.angular.z = 2*math.radians(180)
     publisher.publish(msg)
-    #timer = node.create_timer(0.5, timer_callback)
+    # timer = node.create_timer(0.5, timer_callback)
+    
 
-    def color_sensor_callback(msg):
-        print(msg)
-    subscription = node.create_subscription(Color, '/turtle1/color_sensor', color_sensor_callback, 10)
+    # def color_sensor_callback(msg):
+    #     print(msg)
+    # subscription = node.create_subscription(Color, '/turtle1/color_sensor', color_sensor_callback, 10)
 
 
     # Clear all drawings
@@ -85,26 +86,26 @@ def main(args=None):
     # ros2 service call /clear std_srvs/srv/Empty
 
     # set background color to marooon
-    os.system("ros2 param set /turtlesim background_r 80")
-    os.system("ros2 param set /turtlesim background_g 0")
-    os.system("ros2 param set /turtlesim background_b 0")
+    # os.system("ros2 param set /turtlesim background_r 80")
+    # os.system("ros2 param set /turtlesim background_g 0")
+    # os.system("ros2 param set /turtlesim background_b 0")
     
     
     # turn pen on and off set_pen(r, g, b, width, off)
-    pen = node.create_client(SetPen, 'turtle1/set_pen')
+    # pen = node.create_client(SetPen, 'turtle1/set_pen')
 
 
-    def set_pen_toggle(toggle):
-        msg = SetPen.Request()
-        msg.r = 255
-        msg.g = 255
-        msg.b = 255
-        msg.width = 1
-        msg.off = not toggle
-        pen.call_async(msg)
+    # def set_pen_toggle(toggle):
+    #     msg = SetPen.Request()
+    #     msg.r = 255
+    #     msg.g = 255
+    #     msg.b = 255
+    #     msg.width = 1
+    #     msg.off = not toggle
+    #     pen.call_async(msg)
 
 
-    set_pen_toggle(True)
+    # set_pen_toggle(True)
     #set_pen_toggle(False)
 
 
@@ -145,6 +146,8 @@ if __name__ == '__main__':
 # - how to go from point A to point B
 # - how to orient the robot accurately
 # ""
+
+
 
 
 
