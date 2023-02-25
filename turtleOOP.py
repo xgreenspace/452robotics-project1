@@ -51,10 +51,6 @@ def read_points(open_file):
 
 class TAMUBot(Node):
 
-
-    
-
-
     def __init__(self):
         super().__init__('tamuturtle')
         
@@ -127,7 +123,7 @@ class TAMUBot(Node):
 
     def move2goal(self):
 
-        distance_tolerance = 0.1
+        distance_tolerance = 0.01
         angular_tolerance = 0.01
 
         goal_pose = self.goal_pose
@@ -175,13 +171,9 @@ class TAMUBot(Node):
             self.goal_pose.theta = self.steering_angle(self.goal_pose)  # should be angle from current point to next point
             self.flag = False
            
-            
-    
-    
-
+        
         self.publisher_cmdvel.publish(vel_msg)
         
-
 
 
 def main(args=None):
